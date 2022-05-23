@@ -13,4 +13,16 @@ public class Klient {
         this.robi_zakupy = true;
 
     }
+
+    void Wejdz() {
+
+    }
+
+    void Zaplac() {
+
+    }
+
+    void Czekaj() {
+
+    }
 }
