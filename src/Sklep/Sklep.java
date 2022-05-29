@@ -8,13 +8,16 @@ import java.util.Random;
 public class Sklep {
     private ArrayList<Klient> klienci;
     private Random random;
+    private int nastepnyNrKlienta;
     private static Sklep instance = null;
-    private double minCzasMiedzyKlientami = 1;
-    private double maxCzasMiedzyKlientami = 10;
+    private int maxCzasMiedzyKlientami;
 
 
     public Sklep() {
-        random = new Random();
+        this.random = new Random();
+        this.maxCzasMiedzyKlientami = 10;
+        this.nastepnyNrKlienta = 0;
+        this.klienci = new ArrayList<Klient>();
     }
 
     static public Sklep getInstance() {
@@ -22,20 +25,22 @@ public class Sklep {
         return instance;
     }
 
-    // Zwraca nr ostatniego klienta
-    public Klient getOstatniKlient() {
-        return klienci.get(klienci.size() - 1);
-    }
-
     public Klient getKlient(int nr_klienta) {
         return klienci.get(nr_klienta);
     }
 
-    public void Wejdz() {
-        klienci.add(new Klient(getOstatniKlient().getNr_klienta() + 1));
+    public void Wejdz(double czasSymulacji) {
+        klienci.add(new Klient(nastepnyNrKlienta, czasSymulacji));
+        System.out.println("Wszedl nowy klient [" + nastepnyNrKlienta + "]");
+        nastepnyNrKlienta++;
     }
 
     public double getCzasWejsciaKolejnego() {
-        return minCzasMiedzyKlientami + (maxCzasMiedzyKlientami - minCzasMiedzyKlientami) * random.nextDouble();
+        return random.nextInt(maxCzasMiedzyKlientami) + 1;
+    }
+
+    public ArrayList<Klient> getKlienci() {
+        return klienci;
     }
 }
+
