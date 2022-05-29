@@ -210,6 +210,7 @@ public class SklepFederate
 //            HLAinteger32BE availableValue = encoderFactory.createHLAinteger32BE( Sklep.getInstance().getAvailable() );
 //            attributes.put( sklepAvailableHandle, availableValue.toByteArray() );
 
+
             rtiamb.updateAttributeValues( objectHandle, attributes, generateTag() );
 
             advanceTime(1);
