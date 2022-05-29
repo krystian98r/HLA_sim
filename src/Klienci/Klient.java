@@ -25,4 +25,8 @@ public class Klient {
     void Czekaj() {
 
     }
+
+    public int getNr_klienta() {
+        return this.nr_klienta;
+    }
 }
