@@ -1,4 +1,4 @@
-package Sklep;
+package Kasa;
 
 import hla.rti1516e.AttributeHandle;
 import hla.rti1516e.AttributeHandleValueMap;
@@ -18,10 +18,16 @@ import hla.rti1516e.encoding.HLAinteger16BE;
 import hla.rti1516e.encoding.HLAinteger32BE;
 import hla.rti1516e.exceptions.FederateInternalError;
 import hla.rti1516e.time.HLAfloat64Time;
+import org.portico.impl.hla1516e.types.encoding.HLA1516eBoolean;
+import org.portico.impl.hla1516e.types.encoding.HLA1516eInteger16BE;
 import org.portico.impl.hla1516e.types.encoding.HLA1516eInteger32BE;
 
-
-public class SklepFederateAmbassador extends NullFederateAmbassador {
+/**
+ * This class handles all incoming callbacks from the RTI regarding a particular
+ * {@link KasaFederate}. It will log information about any callbacks it
+ * receives, thus demonstrating how to deal with the provided callback information.
+ */
+public class KasaFederateAmbassador extends NullFederateAmbassador {
     //----------------------------------------------------------
     //                    STATIC VARIABLES
     //----------------------------------------------------------
@@ -29,7 +35,7 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
     //----------------------------------------------------------
     //                   INSTANCE VARIABLES
     //----------------------------------------------------------
-    private SklepFederate federate;
+    private KasaFederate federate;
 
     // these variables are accessible in the package
     protected double federateTime = 0.0;
@@ -48,7 +54,7 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
     //                      CONSTRUCTORS
     //----------------------------------------------------------
 
-    public SklepFederateAmbassador(SklepFederate federate) {
+    public KasaFederateAmbassador(KasaFederate federate) {
         this.federate = federate;
     }
 
@@ -76,14 +82,14 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
     @Override
     public void announceSynchronizationPoint(String label, byte[] tag) {
         log("Synchronization point announced: " + label);
-        if (label.equals(SklepFederate.READY_TO_RUN))
+        if (label.equals(KasaFederate.READY_TO_RUN))
             this.isAnnounced = true;
     }
 
     @Override
     public void federationSynchronized(String label, FederateHandleSet failed) {
         log("Federation Synchronized: " + label);
-        if (label.equals(SklepFederate.READY_TO_RUN))
+        if (label.equals(KasaFederate.READY_TO_RUN))
             this.isReadyToRun = true;
     }
 
@@ -208,10 +214,32 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
 
         // print the handle
         builder.append(" handle=" + interactionClass);
-        if (interactionClass.equals(federate.addProductsHandle)) {
-            builder.append(" (AddProducts)");
-        } else if (interactionClass.equals(federate.getProductsHandle)) {
-            builder.append(" (GetProducts)");
+        if (interactionClass.equals(federate.czekajHandle)) {
+            builder.append(" (czekaj)");
+            byte[] bytes = theParameters.get(federate.nrKlientaCzekajHandle);
+            byte[] bytes2 = theParameters.get(federate.nrKasyCzekajHandle);
+            byte[] bytes3 = theParameters.get(federate.uprzywilejowanyCzekajHandle);
+
+
+            HLAinteger32BE nrKasy = new HLA1516eInteger32BE();
+            HLAinteger32BE nrKlienta = new HLA1516eInteger32BE();
+            HLA1516eBoolean uprzywilejowany = new HLA1516eBoolean();
+
+            try {
+                nrKlienta.decode(bytes);
+                nrKasy.decode(bytes2);
+                uprzywilejowany.decode(bytes3);
+            } catch (DecoderException e) {
+                e.printStackTrace();
+            }
+
+            for (int i = 0; i < federate.getKasyIlosc(); i++) {
+                if (federate.kasy.get(i).getDostepnosc()) {
+                    federate.kasy.get(i).czekaj(nrKlienta.getValue(), federateTime, uprzywilejowany.getValue());
+                    break;
+                }
+            }
+
         }
 
         // print the tag
@@ -226,34 +254,17 @@ public class SklepFederateAmbassador extends NullFederateAmbassador {
         builder.append(", parameterCount=" + theParameters.size());
         builder.append("\n");
         for (ParameterHandle parameter : theParameters.keySet()) {
-
-            if (parameter.equals(federate.countHandle)) {
-                builder.append("\tCOUNT PARAM!");
-                byte[] bytes = theParameters.get(federate.countHandle);
-                HLAinteger32BE count = new HLA1516eInteger32BE();
-                try {
-                    count.decode(bytes);
-                } catch (DecoderException e) {
-                    e.printStackTrace();
-                }
-                int countValue = count.getValue();
-                builder.append("\tcount Value=" + countValue);
-//                if (interactionClass.equals(federate.addProductsHandle)) {
-//                    Sklep.getInstance().addTo(countValue);
-//                } else if (interactionClass.equals(federate.getProductsHandle)) {
-//                    Sklep.getInstance().getFrom(countValue);
-//                }
-            } else {
-                // print the parameter handle
-                builder.append("\tparamHandle=");
-                builder.append(parameter);
-                // print the parameter value
-                builder.append(", paramValue=");
-                builder.append(theParameters.get(parameter).length);
-                builder.append(" bytes");
-                builder.append("\n");
-            }
+            // print the parameter handle
+            builder.append("\tparamHandle=");
+            builder.append(parameter);
+            // print the parameter value
+            builder.append(", paramValue=");
+            builder.append(theParameters.get(parameter).length);
+            builder.append(" bytes");
+            builder.append("\n");
         }
+
+
 
         log(builder.toString());
     }

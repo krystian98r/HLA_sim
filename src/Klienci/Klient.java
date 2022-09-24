@@ -1,48 +1,64 @@
 package Klienci;
 
-import Sklep.SklepFederate;
-import Sklep.SklepFederateAmbassador;
-import hla.rti.RTIambassador;
-import hla.rti1516e.FederateAmbassador;
-
 import java.util.Random;
+import java.util.UUID;
 
 public class Klient {
-    private int nr_klienta;
-    private boolean robi_zakupy;
+    private final int maxCzasZakupow = 12;
+    private final int minCzasZakupow = 2;
+    private final int nrKlienta;
     private boolean uprzywilejowany;
-    private int nr_kasy;
-    private double czas_wejscia;
-    private double czas_zakupow;
-    private Random random;
+    private int nrKasy;
+    private double czasWejscia;
+    private int czasZakupow;
 
-    public Klient(int nr_klienta, double czas_wejscia) {
-        this.random = new Random();
-        this.nr_klienta = nr_klienta;
-        this.robi_zakupy = true;
-        this.uprzywilejowany = random.nextBoolean();
-        this.czas_zakupow = random.nextInt(20) + 1;
-        this.czas_wejscia = czas_wejscia;
+    private Random random = new Random();
+
+
+    public Klient(int nrKlienta, double czasWejscia) {
+        this.czasWejscia = czasWejscia;
+        this.czasZakupow = random.nextInt(maxCzasZakupow - minCzasZakupow) + minCzasZakupow;
+        this.uprzywilejowany = random.nextInt(10) == 0; // bound/100 chance to get
+        this.nrKlienta = nrKlienta;
+
+        System.out.println("\u001B[34mNOWY KLIENT\nNr klienta: " + nrKlienta + "\nCzas robienia zakupów: " + czasZakupow);
+        if (uprzywilejowany) System.out.println("Uprzywilejowany: TAK\n");
+        else System.out.println("Uprzywilejowany: NIE");
+        System.out.println("\u001B[0m");
     }
 
-    void Zaplac() {
-
+    public Klient(int nrKlienta) {
+        this.nrKlienta = nrKlienta;
     }
 
-    void Czekaj() {
-        robi_zakupy = false;
-        nr_kasy = 0;
+    public int zaplac() {
+        System.out.println("\033[42m" + "Klient o nr " + nrKlienta + " zapłacił i wychodzi ze sklepu." + "\033[0m");
+        return this.nrKlienta;
     }
 
-    public int getNr_klienta() {
-        return this.nr_klienta;
+    public int getNrKasy() {
+        return this.nrKasy;
     }
 
-    public double getCzas_zakupow() {
-        return this.czas_zakupow;
+    public int czekaj(int nrKasy) {
+        this.nrKasy = nrKasy;
+        System.out.println("\033[41m" + "Klient o nr " + nrKlienta + " podchodzi do kasy nr " + nrKasy + "\033[0m");
+        return this.nrKlienta;
     }
 
-    public double getCzas_wejscia() {
-        return this.czas_wejscia;
+    public int getNrKlienta() {
+        return nrKlienta;
+    }
+
+    public double getCzasWejscia() {
+        return czasWejscia;
+    }
+
+    public int getCzasZakupow() {
+        return czasZakupow;
+    }
+
+    public boolean isUprzywilejowany() {
+        return uprzywilejowany;
     }
 }

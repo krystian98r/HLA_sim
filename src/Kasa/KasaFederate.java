@@ -1,11 +1,11 @@
-package Sklep;
+package Kasa;
 
 import Klienci.Klient;
 import hla.rti1516e.*;
 import hla.rti1516e.encoding.EncoderFactory;
+import hla.rti1516e.encoding.HLAboolean;
 import hla.rti1516e.encoding.HLAinteger16BE;
 import hla.rti1516e.encoding.HLAinteger32BE;
-import hla.rti1516e.encoding.HLAvariableArray;
 import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
 import hla.rti1516e.exceptions.FederationExecutionAlreadyExists;
 import hla.rti1516e.exceptions.FederationExecutionDoesNotExist;
@@ -13,24 +13,23 @@ import hla.rti1516e.exceptions.RTIexception;
 import hla.rti1516e.time.HLAfloat64Interval;
 import hla.rti1516e.time.HLAfloat64Time;
 import hla.rti1516e.time.HLAfloat64TimeFactory;
-import org.portico.impl.hla1516.types.HLA1516ObjectClassHandle;
+import org.portico.impl.hla1516e.types.encoding.HLA1516eInteger32BE;
+import org.w3c.dom.Attr;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Random;
 
-public class SklepFederate {
+public class KasaFederate {
     //----------------------------------------------------------
     //                    STATIC VARIABLES
     //----------------------------------------------------------
-    /**
-     * The number of times we will update our attributes and send an interaction
-     */
-    public static final int ITERATIONS = 20;
+    
 
     /**
      * The sync point all federates will sync up on before starting
@@ -41,17 +40,24 @@ public class SklepFederate {
     //                   INSTANCE VARIABLES
     //----------------------------------------------------------
     private RTIambassador rtiamb;
-    private SklepFederateAmbassador fedamb;  // created when we connect
+    private KasaFederateAmbassador fedamb;  // created when we connect
     private HLAfloat64TimeFactory timeFactory; // set when we join
     protected EncoderFactory encoderFactory;     // set when we join
 
     // caches of handle types - set once we join a federation
-    protected ObjectClassHandle sklepHandle;
-    protected AttributeHandle sklepMaxHandle;
-    protected AttributeHandle sklepAvailableHandle;
-    protected InteractionClassHandle addProductsHandle;
-    protected InteractionClassHandle getProductsHandle;
-    protected ParameterHandle countHandle;
+    protected ObjectClassHandle kasaHandle;
+    protected AttributeHandle dostepnoscKasyHandle;
+    protected AttributeHandle nrKasyHandle;
+    protected InteractionClassHandle czekajHandle;
+    protected ParameterHandle nrKlientaCzekajHandle;
+    protected ParameterHandle nrKasyCzekajHandle;
+    protected ParameterHandle uprzywilejowanyCzekajHandle;
+    protected InteractionClassHandle obsluzHandle;
+    protected ParameterHandle nrKlientaObsluzHandle;
+    protected ParameterHandle nrKasyObsluzHandle;
+
+    protected ArrayList<Kasa> kasy = new ArrayList<>();
+    protected double nastepnaObsluga;
 
     //----------------------------------------------------------
     //                      CONSTRUCTORS
@@ -65,13 +71,15 @@ public class SklepFederate {
      * This is just a helper method to make sure all logging it output in the same form
      */
     private void log(String message) {
-        System.out.println("SklepFederate   : " + message);
+
+        System.out.println("KasaFederate   : " + message);
     }
 
     /**
      * This method will block until the user presses enter
      */
     private void waitForUser() {
+
         log(" >>>>>>>>>> Press Enter to Continue <<<<<<<<<<");
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         try {
@@ -101,7 +109,7 @@ public class SklepFederate {
 
         // connect
         log("Connecting...");
-        fedamb = new SklepFederateAmbassador(this);
+        fedamb = new KasaFederateAmbassador(this);
         rtiamb.connect(fedamb, CallbackModel.HLA_EVOKED);
 
         //////////////////////////////
@@ -109,11 +117,9 @@ public class SklepFederate {
         //////////////////////////////
         log("Creating Federation...");
         // We attempt to create a new federation with the first three of the
-        // restaurant FOM modules covering processes, food and drink
+        // sklep FOM modules covering processes, food and drink
         try {
-            URL[] modules = new URL[]{
-                    (new File("foms/Sklep.xml")).toURI().toURL(),
-            };
+            URL[] modules = new URL[]{(new File("foms/Sklep.xml")).toURI().toURL(),};
 
             rtiamb.createFederationExecution("SklepFederation", modules);
             log("Created Federation");
@@ -129,7 +135,7 @@ public class SklepFederate {
         // 4. join the federation //
         ////////////////////////////
         rtiamb.joinFederationExecution(federateName,            // name for the federate
-                "storage",   // federate type
+                "Kasa",   // federate type
                 "SklepFederation"     // name of federation
         );           // modules we want to add
 
@@ -186,7 +192,7 @@ public class SklepFederate {
         /////////////////////////////////////
         // 9. register an object to update //
         /////////////////////////////////////
-        ObjectInstanceHandle objectHandle = rtiamb.registerObjectInstance(sklepHandle);
+        ObjectInstanceHandle objectHandle = rtiamb.registerObjectInstance(kasaHandle);
         log("Registered Storage, handle=" + objectHandle);
 
         /////////////////////////////////////
@@ -195,23 +201,54 @@ public class SklepFederate {
         // here is where we do the meat of our work. in each iteration, we will
         // update the attribute values of the object we registered, and will
         // send an interaction.
-        DecimalFormat df = new DecimalFormat("0.00");
+        kasy.add(new Kasa(1));
+        int i_nrKasy = 2;
+
         while (fedamb.isRunning) {
             // update ProductsStorage parameters max and available to current values
             AttributeHandleValueMap attributes = rtiamb.getAttributeHandleValueMapFactory().create(2);
-            Sklep.getInstance().Wejdz(fedamb.federateTime);
+            HLAboolean dostepnoscKasy = null;
+            HLAinteger32BE nrKasy = new HLA1516eInteger32BE();
+            HLAinteger32BE nrKlienta;
 
+            for (int i = 0; i < kasy.size(); i++) {
+                if (kasy.get(i).getDostepnosc()) {
+                    dostepnoscKasy = encoderFactory.createHLAboolean(kasy.get(i).getDostepnosc());
+                    nrKasy = encoderFactory.createHLAinteger32BE(kasy.get(i).getNrKasy());
+                    break;
+                } else if (!kasy.get(i).getDostepnosc() && i == kasy.size() - 1) {
+                    kasy.add(new Kasa(i_nrKasy));
+                    i_nrKasy++;
+                }
+            }
 
-//            HLAinteger32BE maxValue = encoderFactory.createHLAinteger32BE( Sklep.getInstance().getMax());
-//            attributes.put( sklepMaxHandle, maxValue.toByteArray() );
+            attributes.put(dostepnoscKasyHandle, dostepnoscKasy.toByteArray());
+            attributes.put(nrKasyHandle, nrKasy.toByteArray());
 
-//            HLAinteger32BE availableValue = encoderFactory.createHLAinteger32BE( Sklep.getInstance().getAvailable() );
-//            attributes.put( sklepAvailableHandle, availableValue.toByteArray() );
+            int nrKlientaKolejka;
+            for (Kasa kasa : kasy) {
+                if (fedamb.federateTime == kasa.getNastepnaObsluga()) {
+                    ParameterHandleValueMap parameterHandleValueMap = rtiamb.getParameterHandleValueMapFactory().create(1);
+                    nrKlientaKolejka = kasa.obsluz(kasa.getNrKasy());
+
+                    ParameterHandle nrKlientaHandleNumer = rtiamb.getParameterHandle(obsluzHandle, "nrKlienta");
+                    nrKlienta = encoderFactory.createHLAinteger32BE(nrKlientaKolejka);
+                    ParameterHandle nrKasyHandleNumer = rtiamb.getParameterHandle(obsluzHandle, "nrKasy");
+                    nrKasy = encoderFactory.createHLAinteger32BE(kasa.getNrKasy());
+
+                    parameterHandleValueMap.put(nrKlientaHandleNumer, nrKlienta.toByteArray());
+                    parameterHandleValueMap.put(nrKasyHandleNumer, nrKasy.toByteArray());
+                    rtiamb.sendInteraction(obsluzHandle, parameterHandleValueMap, generateTag());
+
+                    if(kasa.getDlugoscKolejki() > 0) kasa.setNastepnaObsluga(fedamb.federateTime);
+                    else kasa.setNastepnaObsluga(0);
+                }
+            }
+
 
             rtiamb.updateAttributeValues(objectHandle, attributes, generateTag());
-
-            advanceTime(Sklep.getInstance().getCzasWejsciaKolejnego());
-            log("Time advanced to " + df.format(fedamb.federateTime));
+            advanceTime(1);
+            log("Time Advanced to " + fedamb.federateTime);
         }
 
         //////////////////////////////////////
@@ -232,7 +269,7 @@ public class SklepFederate {
         // NOTE: we won't die if we can't do this because other federates
         //       remain. in that case we'll leave it for them to clean up
         try {
-            rtiamb.destroyFederationExecution("SklepFederation");
+            rtiamb.destroyFederationExecution("ExampleFederation");
             log("Destroyed Federation");
         } catch (FederationExecutionDoesNotExist dne) {
             log("No need to destroy federation, it doesn't exist");
@@ -284,29 +321,28 @@ public class SklepFederate {
      */
     private void publishAndSubscribe() throws RTIexception {
 //		publish ProductsStrorage object
-        this.sklepHandle = rtiamb.getObjectClassHandle("HLAobjectRoot.Sklep");
-        this.sklepMaxHandle = rtiamb.getAttributeHandle(sklepHandle, "max");
-        this.sklepAvailableHandle = rtiamb.getAttributeHandle(sklepHandle, "available");
+        this.kasaHandle = rtiamb.getObjectClassHandle("HLAobjectRoot.Kasa");
+        this.dostepnoscKasyHandle = rtiamb.getAttributeHandle(kasaHandle, "dostepnoscKasy");
 //		// package the information into a handle set
         AttributeHandleSet attributes = rtiamb.getAttributeHandleSetFactory().create();
-        attributes.add(sklepMaxHandle);
-        attributes.add(sklepAvailableHandle);
-//
-        rtiamb.publishObjectClassAttributes(sklepHandle, attributes);
+        attributes.add(dostepnoscKasyHandle);
 
-        //get count parameter for ProductsManagment Interaction
-        countHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle("HLAinteractionRoot.ProductsManagment"), "count");
+        this.nrKasyHandle = rtiamb.getAttributeHandle(kasaHandle, "nrKasy");
+        attributes.add(nrKasyHandle);
+        rtiamb.publishObjectClassAttributes(kasaHandle, attributes);
 
-        // subscribe for AddProducts interaction
-        String iname = "HLAinteractionRoot.ProductsManagment.AddProducts";
-        addProductsHandle = rtiamb.getInteractionClassHandle(iname);
-        rtiamb.subscribeInteractionClass(addProductsHandle);
+        // publish Obsluz interaction
+        String iname = "HLAinteractionRoot.Kasa.obsluz";
+        obsluzHandle = rtiamb.getInteractionClassHandle(iname);
+        rtiamb.publishInteractionClass(obsluzHandle);
 
-        // subscribe for GetProducts interaction
-        iname = "HLAinteractionRoot.ProductsManagment.GetProducts";
-        getProductsHandle = rtiamb.getInteractionClassHandle(iname);
-        countHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle("HLAinteractionRoot.ProductsManagment"), "count");
-        rtiamb.subscribeInteractionClass(getProductsHandle);
+        // subscribe for Czekaj interaction
+        iname = "HLAinteractionRoot.Klient.czekaj";
+        czekajHandle = rtiamb.getInteractionClassHandle(iname);
+        nrKlientaCzekajHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle(iname), "nrKlienta");
+        nrKasyCzekajHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle(iname), "nrKasy");
+        uprzywilejowanyCzekajHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle(iname), "uprzywilejowany");
+        rtiamb.subscribeInteractionClass(czekajHandle);
     }
 
     /**
@@ -329,11 +365,17 @@ public class SklepFederate {
     }
 
     private short getTimeAsShort() {
+
         return (short) fedamb.federateTime;
     }
 
     private byte[] generateTag() {
+
         return ("(timestamp) " + System.currentTimeMillis()).getBytes();
+    }
+
+    public int getKasyIlosc() {
+        return kasy.size();
     }
 
     //----------------------------------------------------------
@@ -341,14 +383,14 @@ public class SklepFederate {
     //----------------------------------------------------------
     public static void main(String[] args) {
         // get a federate name, use "exampleFederate" as default
-        String federateName = "Sklep";
+        String federateName = "Kasa";
         if (args.length != 0) {
             federateName = args[0];
         }
 
         try {
             // run the example federate
-            new SklepFederate().runFederate(federateName);
+            new KasaFederate().runFederate(federateName);
         } catch (Exception rtie) {
             // an exception occurred, just log the information and exit
             rtie.printStackTrace();
