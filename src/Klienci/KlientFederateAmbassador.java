@@ -176,16 +176,16 @@ public class KlientFederateAmbassador extends NullFederateAmbassador {
             // if we're dealing with Flavor, decode into the appropriate enum value
             if (attributeHandle.equals(federate.dostepnoscKasyHandle)) {
                 builder.append(attributeHandle);
-                builder.append(" (Available)    ");
+                builder.append(" (dostepnoscKasy)    ");
                 builder.append(", attributeValue=");
-                HLAboolean available = new HLA1516eBoolean();
+                HLAboolean dostepnoscKasy = new HLA1516eBoolean();
                 try {
-                    available.decode(theAttributes.get(attributeHandle));
+                    dostepnoscKasy.decode(theAttributes.get(attributeHandle));
                 } catch (DecoderException e) {
                     e.printStackTrace();
                 }
-                builder.append(available.getValue());
-                federate.kasaAvailable = available.getValue();
+                builder.append(dostepnoscKasy.getValue());
+                federate.kasaAvailable = dostepnoscKasy.getValue();
             } else if (attributeHandle.equals(federate.nrKasyHandle)) {
                 builder.append(attributeHandle);
                 builder.append(" (nrKasy)    ");

@@ -1,5 +1,6 @@
-package Kasa;
+package Statystyka;
 
+import Klienci.Klient;
 import hla.rti1516e.AttributeHandle;
 import hla.rti1516e.AttributeHandleValueMap;
 import hla.rti1516e.FederateHandleSet;
@@ -14,6 +15,7 @@ import hla.rti1516e.ParameterHandleValueMap;
 import hla.rti1516e.SynchronizationPointFailureReason;
 import hla.rti1516e.TransportationTypeHandle;
 import hla.rti1516e.encoding.DecoderException;
+import hla.rti1516e.encoding.HLAboolean;
 import hla.rti1516e.encoding.HLAinteger16BE;
 import hla.rti1516e.encoding.HLAinteger32BE;
 import hla.rti1516e.exceptions.FederateInternalError;
@@ -24,10 +26,10 @@ import org.portico.impl.hla1516e.types.encoding.HLA1516eInteger32BE;
 
 /**
  * This class handles all incoming callbacks from the RTI regarding a particular
- * {@link KasaFederate}. It will log information about any callbacks it
+ * {@link StatystykaFederate}. It will log information about any callbacks it
  * receives, thus demonstrating how to deal with the provided callback information.
  */
-public class KasaFederateAmbassador extends NullFederateAmbassador {
+public class StatystykaFederateAmbassador extends NullFederateAmbassador {
     //----------------------------------------------------------
     //                    STATIC VARIABLES
     //----------------------------------------------------------
@@ -35,7 +37,7 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
     //----------------------------------------------------------
     //                   INSTANCE VARIABLES
     //----------------------------------------------------------
-    private KasaFederate federate;
+    private StatystykaFederate federate;
 
     // these variables are accessible in the package
     protected double federateTime = 0.0;
@@ -54,7 +56,7 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
     //                      CONSTRUCTORS
     //----------------------------------------------------------
 
-    public KasaFederateAmbassador(KasaFederate federate) {
+    public StatystykaFederateAmbassador(StatystykaFederate federate) {
         this.federate = federate;
     }
 
@@ -82,14 +84,14 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
     @Override
     public void announceSynchronizationPoint(String label, byte[] tag) {
         log("Synchronization point announced: " + label);
-        if (label.equals(KasaFederate.READY_TO_RUN))
+        if (label.equals(StatystykaFederate.READY_TO_RUN))
             this.isAnnounced = true;
     }
 
     @Override
     public void federationSynchronized(String label, FederateHandleSet failed) {
         log("Federation Synchronized: " + label);
-        if (label.equals(KasaFederate.READY_TO_RUN))
+        if (label.equals(StatystykaFederate.READY_TO_RUN))
             this.isReadyToRun = true;
     }
 
@@ -162,6 +164,9 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
         builder.append(", tag=" + new String(tag));
         // print the time (if we have it) we'll get null if we are just receiving
         // a forwarded call from the other reflect callback above
+        if (time != null) {
+            builder.append(", time=" + ((HLAfloat64Time) time).getValue());
+        }
 
         // print the attribute information
         builder.append(", attributeCount=" + theAttributes.size());
@@ -171,6 +176,61 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
             builder.append("\tattributeHandle=");
 
             // if we're dealing with Flavor, decode into the appropriate enum value
+            if (attributeHandle.equals(federate.nrKlientaKlientHandle)) {
+                federate.statystyka.dodajNaSklepie();
+                builder.append(attributeHandle);
+                builder.append(" (nrKlienta)    ");
+                builder.append(", attributeValue=");
+                HLAinteger32BE nrKlienta = new HLA1516eInteger32BE();
+                try {
+                    nrKlienta.decode(theAttributes.get(attributeHandle));
+                } catch (DecoderException e) {
+                    e.printStackTrace();
+                }
+                builder.append(nrKlienta.getValue());
+                federate.klienci.add(new Klient(nrKlienta.getValue(), federateTime));
+//                federate.statystyka.dodajNaSklepie();
+            } else if (attributeHandle.equals(federate.czasWejsciaKlientHandle)) {
+                builder.append(attributeHandle);
+                builder.append(" (czasWejscia)");
+                builder.append(", attributeValue=");
+                HLAinteger32BE czasWejscia = new HLA1516eInteger32BE();
+                try {
+                    czasWejscia.decode(theAttributes.get(attributeHandle));
+                } catch (DecoderException e) {
+                    e.printStackTrace();
+                }
+                builder.append(czasWejscia.getValue());
+            } else if (attributeHandle.equals(federate.czasZakupowKlientHandle)) {
+                builder.append(attributeHandle);
+                builder.append(" (czasZakupow)");
+                builder.append(", attributeValue=");
+                HLAinteger32BE czasZakupow = new HLA1516eInteger32BE();
+                try {
+                    czasZakupow.decode(theAttributes.get(attributeHandle));
+                } catch (DecoderException e) {
+                    e.printStackTrace();
+                }
+                builder.append(czasZakupow.getValue());
+                federate.klienci.get(federate.klienci.size() - 1).setCzasZakupow(czasZakupow.getValue());
+                federate.statystyka.dodajSumaCzasZakupow(czasZakupow.getValue());
+            } else if (attributeHandle.equals(federate.uprzywilejowanyKlientHandle)) {
+                builder.append(attributeHandle);
+                builder.append(" (uprzywilejowany)");
+                builder.append(", attributeValue=");
+                HLA1516eBoolean uprzywilejowany = new HLA1516eBoolean();
+                try {
+                    uprzywilejowany.decode(theAttributes.get(attributeHandle));
+                } catch (DecoderException e) {
+                    e.printStackTrace();
+                }
+                builder.append(uprzywilejowany.getValue());
+                federate.klienci.get(federate.klienci.size() - 1).setUprzywilejowany(uprzywilejowany.getValue());
+                if (uprzywilejowany.getValue()) federate.statystyka.dodajUprzywilejowany();
+            } else {
+                builder.append(attributeHandle);
+                builder.append(" (Unknown)   ");
+            }
 
             builder.append("\n");
         }
@@ -215,28 +275,18 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
         builder.append(" handle=" + interactionClass);
         if (interactionClass.equals(federate.czekajHandle)) {
             builder.append(" (czekaj)");
-            byte[] bytes = theParameters.get(federate.nrKlientaCzekajHandle);
-            byte[] bytes2 = theParameters.get(federate.nrKasyCzekajHandle);
-            byte[] bytes3 = theParameters.get(federate.uprzywilejowanyCzekajHandle);
-
-            HLAinteger32BE nrKasy = new HLA1516eInteger32BE();
-            HLAinteger32BE nrKlienta = new HLA1516eInteger32BE();
-            HLA1516eBoolean uprzywilejowany = new HLA1516eBoolean();
-
-            try {
-                nrKlienta.decode(bytes);
-                nrKasy.decode(bytes2);
-                uprzywilejowany.decode(bytes3);
-            } catch (DecoderException e) {
-                e.printStackTrace();
-            }
-
-            for (int i = 0; i < federate.getKasyIlosc(); i++) {
-                if (federate.kasy.get(i).getDostepnosc()) {
-                    federate.kasy.get(i).czekaj(nrKlienta.getValue(), federateTime, uprzywilejowany.getValue());
-                    break;
-                }
-            }
+            federate.statystyka.dodajPrzyKasach();
+            federate.statystyka.odejmijNaSklepie();
+        } else if (interactionClass.equals(federate.obsluzHandle)) {
+            builder.append(" (obsluz)");
+            federate.statystyka.odejmijPrzyKasach();
+            federate.statystyka.dodajObsluzeni();
+        } else if (interactionClass.equals(federate.otworzHandle)) {
+            builder.append(" (otworz)");
+            federate.statystyka.dodajKase();
+        } else if (interactionClass.equals(federate.zamknijHandle)) {
+            builder.append(" (zamknij)");
+            federate.statystyka.odejmijKase();
         }
 
         // print the tag
@@ -250,16 +300,40 @@ public class KasaFederateAmbassador extends NullFederateAmbassador {
         // print the parameer information
         builder.append(", parameterCount=" + theParameters.size());
         builder.append("\n");
-        for (ParameterHandle parameter : theParameters.keySet()) {
-            // print the parameter handle
-            builder.append("\tparamHandle=");
-            builder.append(parameter);
-            // print the parameter value
-            builder.append(", paramValue=");
-            builder.append(theParameters.get(parameter).length);
-            builder.append(" bytes");
-            builder.append("\n");
-        }
+//        for( ParameterHandle parameter : theParameters.keySet() )
+//        {
+//
+//            if(parameter.equals(federate.idKlientaHandle))
+//            {
+//                builder.append( "\tCOUNT PARAM!" );
+//                //byte[] bytes = theParameters.get(federate.stolikHandle);
+//
+//
+//                //int nrValue = nr_stolika.getValue();
+//                int idValue = id_klienta.getValue();
+//                if( interactionClass.equals(federate.zajmijStolikHandle) )
+//                {
+//                    Stolik.getInstance().zajmij_stolik(1, idValue);
+//                }
+//                else if( interactionClass.equals(federate.zwolnijStolikHandle) )
+//                {
+//                    Stolik.getInstance().zwolnij_stolik(1, idValue);
+//                }
+//
+//
+//            }
+//            else
+//            {
+//                // print the parameter handle
+//                builder.append( "\tparamHandle=" );
+//                builder.append( parameter );
+//                // print the parameter value
+//                builder.append( ", paramValue=" );
+//                builder.append( theParameters.get(parameter).length );
+//                builder.append( " bytes" );
+//                builder.append( "\n" );
+//            }
+//        }
 
         log(builder.toString());
     }

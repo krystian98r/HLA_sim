@@ -1,4 +1,4 @@
-package Kasa;
+package Statystyka;
 
 import Klienci.Klient;
 import hla.rti1516e.*;
@@ -16,6 +16,7 @@ import hla.rti1516e.time.HLAfloat64TimeFactory;
 import org.portico.impl.hla1516e.types.encoding.HLA1516eInteger32BE;
 import org.w3c.dom.Attr;
 
+import javax.management.Attribute;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -25,11 +26,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class KasaFederate {
+public class StatystykaFederate {
     //----------------------------------------------------------
     //                    STATIC VARIABLES
     //----------------------------------------------------------
-
 
     /**
      * The sync point all federates will sync up on before starting
@@ -40,28 +40,31 @@ public class KasaFederate {
     //                   INSTANCE VARIABLES
     //----------------------------------------------------------
     private RTIambassador rtiamb;
-    private KasaFederateAmbassador fedamb;  // created when we connect
+    private StatystykaFederateAmbassador fedamb;  // created when we connect
     private HLAfloat64TimeFactory timeFactory; // set when we join
     protected EncoderFactory encoderFactory;     // set when we join
 
     // caches of handle types - set once we join a federation
-    protected ObjectClassHandle kasaHandle;
-    protected AttributeHandle dostepnoscKasyHandle;
-    protected AttributeHandle nrKasyHandle;
+    protected ObjectClassHandle statystykaHandle;
+    protected Statystyka statystyka = new Statystyka();
+    protected ObjectClassHandle klientHandle;
+    protected AttributeHandle czasWejsciaKlientHandle;
+    protected AttributeHandle czasZakupowKlientHandle;
+    protected AttributeHandle nrKlientaKlientHandle;
+    protected AttributeHandle nrKasyKlientHandle;
+    protected AttributeHandle uprzywilejowanyKlientHandle;
+    protected InteractionClassHandle obsluzHandle;
+    protected ParameterHandle nrKlientaObsluzHandle;
+    protected ParameterHandle nrKasyObsluzHandle;
     protected InteractionClassHandle czekajHandle;
     protected ParameterHandle nrKlientaCzekajHandle;
     protected ParameterHandle nrKasyCzekajHandle;
     protected ParameterHandle uprzywilejowanyCzekajHandle;
-    protected InteractionClassHandle obsluzHandle;
-    protected ParameterHandle nrKlientaObsluzHandle;
-    protected ParameterHandle nrKasyObsluzHandle;
     protected InteractionClassHandle otworzHandle;
     protected ParameterHandle nrKasyOtworzHandle;
     protected InteractionClassHandle zamknijHandle;
     protected ParameterHandle nrKasyZamknijHandle;
-
-    protected ArrayList<Kasa> kasy = new ArrayList<>();
-    protected double nastepnaObsluga;
+    protected ArrayList<Klient> klienci = new ArrayList<>();
 
     //----------------------------------------------------------
     //                      CONSTRUCTORS
@@ -75,15 +78,13 @@ public class KasaFederate {
      * This is just a helper method to make sure all logging it output in the same form
      */
     private void log(String message) {
-
-        System.out.println("KasaFederate   : " + message);
+        System.out.println("StatystykaFederate   : " + message);
     }
 
     /**
      * This method will block until the user presses enter
      */
     private void waitForUser() {
-
         log(" >>>>>>>>>> Press Enter to Continue <<<<<<<<<<");
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         try {
@@ -113,7 +114,7 @@ public class KasaFederate {
 
         // connect
         log("Connecting...");
-        fedamb = new KasaFederateAmbassador(this);
+        fedamb = new StatystykaFederateAmbassador(this);
         rtiamb.connect(fedamb, CallbackModel.HLA_EVOKED);
 
         //////////////////////////////
@@ -123,7 +124,9 @@ public class KasaFederate {
         // We attempt to create a new federation with the first three of the
         // sklep FOM modules covering processes, food and drink
         try {
-            URL[] modules = new URL[]{(new File("foms/Sklep.xml")).toURI().toURL(),};
+            URL[] modules = new URL[]{
+                    (new File("foms/Sklep.xml")).toURI().toURL(),
+            };
 
             rtiamb.createFederationExecution("SklepFederation", modules);
             log("Created Federation");
@@ -139,7 +142,7 @@ public class KasaFederate {
         // 4. join the federation //
         ////////////////////////////
         rtiamb.joinFederationExecution(federateName,            // name for the federate
-                "Kasa",   // federate type
+                "Statystyka",   // federate type
                 "SklepFederation"     // name of federation
         );           // modules we want to add
 
@@ -196,8 +199,8 @@ public class KasaFederate {
         /////////////////////////////////////
         // 9. register an object to update //
         /////////////////////////////////////
-        ObjectInstanceHandle objectHandle = rtiamb.registerObjectInstance(kasaHandle);
-        log("Registered Storage, handle=" + objectHandle);
+//        ObjectInstanceHandle objectHandle = rtiamb.registerObjectInstance(statystykaHandle);
+//        log("Registered Storage, handle=" + objectHandle);
 
         /////////////////////////////////////
         // 10. do the main simulation loop //
@@ -206,73 +209,14 @@ public class KasaFederate {
         // update the attribute values of the object we registered, and will
         // send an interaction.
 
-        int i_nrKasy = 1;
-
         while (fedamb.isRunning) {
-            AttributeHandleValueMap attributes = rtiamb.getAttributeHandleValueMapFactory().create(2);
-            HLAboolean dostepnoscKasy = null;
-            HLAinteger32BE nrKasy = new HLA1516eInteger32BE();
-            HLAinteger32BE nrKlienta;
+            System.out.println("\u001B[31mZOtwarte kasy: " + statystyka.getOtwarteKasy());
+            System.out.println("Klienci robiący zakupy: " + statystyka.getKlienciNaSklepie());
+            System.out.println("Klienci przy kasach: " + statystyka.getKlienciPrzyKasach());
+            System.out.println("Klienci obsłużeni: " + statystyka.getObsluzeniKlienci());
+            System.out.println("Średni czas zakupów: " + statystyka.getSredniCzasZakupow());
+            System.out.println("Uprzywilejowanych klientów: " + statystyka.getSumaUprzywilejowanych() + " (" + statystyka.getProcentUprzywilejowanych() + "%)\u001B[0mZ");
 
-            if (kasy.isEmpty()) {
-                kasy.add(new Kasa(i_nrKasy));
-                ParameterHandleValueMap attributesValueMap = rtiamb.getParameterHandleValueMapFactory().create(1);
-                ParameterHandle nrKasyOtworzHandle = rtiamb.getParameterHandle(otworzHandle, "nrKasy");
-                HLAinteger32BE nrKasyOtworz = encoderFactory.createHLAinteger32BE(i_nrKasy);
-                attributesValueMap.put(nrKasyOtworzHandle, nrKasyOtworz.toByteArray());
-                rtiamb.sendInteraction(otworzHandle, attributesValueMap, generateTag());
-                i_nrKasy++;
-            }
-
-            for (int i = 0; i < kasy.size(); i++) {
-                if (kasy.get(i).getDostepnosc()) {
-                    dostepnoscKasy = encoderFactory.createHLAboolean(kasy.get(i).getDostepnosc());
-                    nrKasy = encoderFactory.createHLAinteger32BE(kasy.get(i).getNrKasy());
-                    attributes.put(dostepnoscKasyHandle, dostepnoscKasy.toByteArray());
-                    attributes.put(nrKasyHandle, nrKasy.toByteArray());
-                    rtiamb.updateAttributeValues(objectHandle, attributes, generateTag());
-
-                    if (kasy.size() > i + 1 && kasy.get(i + 1).getDlugoscKolejki() == 0) {
-                        System.out.println("\u001B[31mZamknięto kasę nr " + kasy.get(kasy.size() - 1).getNrKasy() + " ze względu na brak kolejki.\u001B[0m");
-                        kasy.remove(kasy.size() - 1);
-                        ParameterHandleValueMap attributesValueMap = rtiamb.getParameterHandleValueMapFactory().create(1);
-                        ParameterHandle nrKasyZamknijHandle = rtiamb.getParameterHandle(zamknijHandle, "nrKasy");
-                        HLAinteger32BE nrKasyZamknij = encoderFactory.createHLAinteger32BE(i_nrKasy);
-                        attributesValueMap.put(nrKasyZamknijHandle, nrKasyZamknij.toByteArray());
-                        rtiamb.sendInteraction(zamknijHandle, attributesValueMap, generateTag());
-                        i_nrKasy--;
-                    }
-                    break;
-                } else if ((!kasy.get(i).getDostepnosc() && i == kasy.size() - 1) || kasy.isEmpty()) {
-                    kasy.add(new Kasa(i_nrKasy));
-                    ParameterHandleValueMap attributesValueMap = rtiamb.getParameterHandleValueMapFactory().create(1);
-                    ParameterHandle nrKasyOtworzHandle = rtiamb.getParameterHandle(otworzHandle, "nrKasy");
-                    HLAinteger32BE nrKasyOtworz = encoderFactory.createHLAinteger32BE(i_nrKasy);
-                    attributesValueMap.put(nrKasyOtworzHandle, nrKasyOtworz.toByteArray());
-                    rtiamb.sendInteraction(otworzHandle, attributesValueMap, generateTag());
-                    i_nrKasy++;
-                }
-            }
-
-            int nrKlientaKolejka;
-            for (Kasa kasa : kasy) {
-                if (fedamb.federateTime == kasa.getNastepnaObsluga()) {
-                    ParameterHandleValueMap parameterHandleValueMap = rtiamb.getParameterHandleValueMapFactory().create(1);
-                    nrKlientaKolejka = kasa.obsluz(kasa.getNrKasy());
-
-                    ParameterHandle nrKlientaHandleNumer = rtiamb.getParameterHandle(obsluzHandle, "nrKlienta");
-                    nrKlienta = encoderFactory.createHLAinteger32BE(nrKlientaKolejka);
-                    ParameterHandle nrKasyHandleNumer = rtiamb.getParameterHandle(obsluzHandle, "nrKasy");
-                    nrKasy = encoderFactory.createHLAinteger32BE(kasa.getNrKasy());
-
-                    parameterHandleValueMap.put(nrKlientaHandleNumer, nrKlienta.toByteArray());
-                    parameterHandleValueMap.put(nrKasyHandleNumer, nrKasy.toByteArray());
-                    rtiamb.sendInteraction(obsluzHandle, parameterHandleValueMap, generateTag());
-
-                    if (kasa.getDlugoscKolejki() > 0) kasa.setNastepnaObsluga(fedamb.federateTime);
-                    else kasa.setNastepnaObsluga(0);
-                }
-            }
             advanceTime(1);
             log("Time Advanced to " + fedamb.federateTime);
         }
@@ -346,38 +290,47 @@ public class KasaFederate {
      * federates produce it.
      */
     private void publishAndSubscribe() throws RTIexception {
-//		publish Kasa object
-        this.kasaHandle = rtiamb.getObjectClassHandle("HLAobjectRoot.Kasa");
-        this.dostepnoscKasyHandle = rtiamb.getAttributeHandle(kasaHandle, "dostepnoscKasy");
-        this.nrKasyHandle = rtiamb.getAttributeHandle(kasaHandle, "nrKasy");
-//		// package the information into a handle set
+        // subscribe for Klient
+        this.klientHandle = rtiamb.getObjectClassHandle("HLAobjectRoot.Klient");
+        this.czasWejsciaKlientHandle = rtiamb.getAttributeHandle(klientHandle, "czasWejscia");
+        this.nrKlientaKlientHandle = rtiamb.getAttributeHandle(klientHandle, "nrKlienta");
+        this.czasZakupowKlientHandle = rtiamb.getAttributeHandle(klientHandle, "czasZakupow");
+        this.uprzywilejowanyKlientHandle = rtiamb.getAttributeHandle(klientHandle, "uprzywilejowany");
+        this.nrKasyKlientHandle = rtiamb.getAttributeHandle(klientHandle, "nrKasy");
         AttributeHandleSet attributes = rtiamb.getAttributeHandleSetFactory().create();
-        attributes.add(dostepnoscKasyHandle);
-        attributes.add(nrKasyHandle);
-        rtiamb.publishObjectClassAttributes(kasaHandle, attributes);
-
-        // publish Otworz interaction
-        String iname = "HLAinteractionRoot.Kasa.otworz";
-        otworzHandle = rtiamb.getInteractionClassHandle(iname);
-        rtiamb.publishInteractionClass(otworzHandle);
-
-        // publish Zamknij interaction
-        iname = "HLAinteractionRoot.Kasa.zamknij";
-        zamknijHandle = rtiamb.getInteractionClassHandle(iname);
-        rtiamb.publishInteractionClass(zamknijHandle);
-
-        // publish Obsluz interaction
-        iname = "HLAinteractionRoot.Kasa.obsluz";
-        obsluzHandle = rtiamb.getInteractionClassHandle(iname);
-        rtiamb.publishInteractionClass(obsluzHandle);
+        attributes.add(czasWejsciaKlientHandle);
+        attributes.add(nrKlientaKlientHandle);
+        attributes.add(uprzywilejowanyKlientHandle);
+        attributes.add(czasZakupowKlientHandle);
+        attributes.add(nrKasyKlientHandle);
+        rtiamb.subscribeObjectClassAttributes(klientHandle, attributes);
 
         // subscribe for Czekaj interaction
-        iname = "HLAinteractionRoot.Klient.czekaj";
+        String iname = "HLAinteractionRoot.Klient.czekaj";
         czekajHandle = rtiamb.getInteractionClassHandle(iname);
         nrKlientaCzekajHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle(iname), "nrKlienta");
         nrKasyCzekajHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle(iname), "nrKasy");
         uprzywilejowanyCzekajHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle(iname), "uprzywilejowany");
         rtiamb.subscribeInteractionClass(czekajHandle);
+
+        // subscribe for Obsluz interaction
+        iname = "HLAinteractionRoot.Kasa.obsluz";
+        obsluzHandle = rtiamb.getInteractionClassHandle(iname);
+        nrKlientaObsluzHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle(iname), "nrKlienta");
+        nrKasyObsluzHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle(iname), "nrKasy");
+        rtiamb.subscribeInteractionClass(obsluzHandle);
+
+        // subscribe for Otworz interaction
+        iname = "HLAinteractionRoot.Kasa.otworz";
+        otworzHandle = rtiamb.getInteractionClassHandle(iname);
+        nrKasyOtworzHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle(iname), "nrKasy");
+        rtiamb.subscribeInteractionClass(otworzHandle);
+
+        // subscribe for Zamknij interaction
+        iname = "HLAinteractionRoot.Kasa.zamknij";
+        zamknijHandle = rtiamb.getInteractionClassHandle(iname);
+        nrKasyZamknijHandle = rtiamb.getParameterHandle(rtiamb.getInteractionClassHandle(iname), "nrKasy");
+        rtiamb.subscribeInteractionClass(zamknijHandle);
     }
 
     /**
@@ -400,17 +353,11 @@ public class KasaFederate {
     }
 
     private short getTimeAsShort() {
-
         return (short) fedamb.federateTime;
     }
 
     private byte[] generateTag() {
-
         return ("(timestamp) " + System.currentTimeMillis()).getBytes();
-    }
-
-    public int getKasyIlosc() {
-        return kasy.size();
     }
 
     //----------------------------------------------------------
@@ -418,13 +365,14 @@ public class KasaFederate {
     //----------------------------------------------------------
     public static void main(String[] args) {
         // get a federate name, use "exampleFederate" as default
-        String federateName = "Kasa";
+        String federateName = "Statystyka";
         if (args.length != 0) {
             federateName = args[0];
         }
 
         try {
-            new KasaFederate().runFederate(federateName);
+            // run the example federate
+            new StatystykaFederate().runFederate(federateName);
         } catch (Exception rtie) {
             // an exception occurred, just log the information and exit
             rtie.printStackTrace();

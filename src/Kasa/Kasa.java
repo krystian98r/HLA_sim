@@ -23,7 +23,7 @@ public class Kasa {
         this.czasObslugi = rand.nextInt(maxCzasObslugi - minCzasObslugi) + minCzasObslugi; // rand.nextInt(maxVal-minVal) + minVal
         this.nastepnaObsluga = -1;
         this.kolejka = new ArrayDeque<>();
-        System.out.println("\u001B[32mOtwarto kasę nr " + nrKasy + "\nCzas obługi: " + czasObslugi + "\nMax kolejka: " + maxDlugosc + "\n\u001B[0m");
+        System.out.println("\u001B[32mOtwarto kasę nr " + nrKasy + "\nCzas obługi: " + czasObslugi + "\nMax kolejka: " + maxDlugosc + "\u001B[0m");
     }
 
     public void czekaj(int nrKlienta, double federateTime, boolean uprzywilejowany) {

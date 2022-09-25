@@ -32,21 +32,65 @@
 				<sharing>PublishSubscribe</sharing>
 				<semantics>Symuluje klientów przychodzących do sklepu i robiących zakupy. Potem ustawianie się w kolejce.</semantics>
 				<attribute>
-					<name>nrKasy</name>
-					<dataType>HLAinteger16BE</dataType>
-					<updateType>Conditional</updateType>
+					<name>czasWejscia</name>
+					<dataType>HLAinteger32BE</dataType>
+					<updateType>NA</updateType>
 					<updateCondition>On Change</updateCondition>
 					<ownership>Divest</ownership>
 					<sharing>PublishSubscribe</sharing>
 					<transportation>HLAbestEffort</transportation>
 					<order>Receive</order>
-					<semantics>Numer kasy do której czeka klient.</semantics>
+					<semantics>N/A</semantics>
+				</attribute>
+				<attribute>
+					<name>nrKlienta</name>
+					<dataType>HLAinteger32BE</dataType>
+					<updateType>NA</updateType>
+					<updateCondition>On Change</updateCondition>
+					<ownership>Divest</ownership>
+					<sharing>PublishSubscribe</sharing>
+					<transportation>HLAbestEffort</transportation>
+					<order>Receive</order>
+					<semantics>N/A</semantics>
+				</attribute>
+				<attribute>
+					<name>czasZakupow</name>
+					<dataType>HLAinteger32BE</dataType>
+					<updateType>NA</updateType>
+					<updateCondition>On Change</updateCondition>
+					<ownership>Divest</ownership>
+					<sharing>PublishSubscribe</sharing>
+					<transportation>HLAbestEffort</transportation>
+					<order>Receive</order>
+					<semantics>N/A</semantics>
+				</attribute>
+				<attribute>
+					<name>nrKasy</name>
+					<dataType>HLAinteger32BE</dataType>
+					<updateType>NA</updateType>
+					<updateCondition>On Change</updateCondition>
+					<ownership>Divest</ownership>
+					<sharing>PublishSubscribe</sharing>
+					<transportation>HLAbestEffort</transportation>
+					<order>Receive</order>
+					<semantics>N/A</semantics>
+				</attribute>
+				<attribute>
+					<name>uprzywilejowany</name>
+					<dataType>HLAboolean</dataType>
+					<updateType>NA</updateType>
+					<updateCondition>On Change</updateCondition>
+					<ownership>Divest</ownership>
+					<sharing>PublishSubscribe</sharing>
+					<transportation>HLAbestEffort</transportation>
+					<order>Receive</order>
+					<semantics>N/A</semantics>
 				</attribute>
 			</objectClass>
 			<objectClass>
 				<name>Kasa</name>
 				<sharing>PublishSubscribe</sharing>
-				<semantics>Symuluje obsługę klientów oraz czekanie w kolejce. Każdy klient obsługiwany jest przez taki sam czas.</semantics>
+				<semantics>Wysyła informację o tym, która kasa ma jeszcze miejsce wkolejce.</semantics>
 				<attribute>
 					<name>nrKasy</name>
 					<dataType>HLAinteger32BE</dataType>
@@ -73,21 +117,43 @@
 			<objectClass>
 				<name>Statystyka</name>
 				<sharing>PublishSubscribe</sharing>
-				<semantics>Zbiera informacje</semantics>
+				<semantics>Dane statystyczne.</semantics>
 				<attribute>
-					<name>sredniCzasZakupow</name>
-					<dataType>HLAfloat32BE</dataType>
-					<updateType>Conditional</updateType>
+					<name>klienciNaSklepie</name>
+					<dataType>HLAinteger32BE</dataType>
+					<updateType>NA</updateType>
 					<updateCondition>On Change</updateCondition>
 					<ownership>Divest</ownership>
 					<sharing>PublishSubscribe</sharing>
 					<transportation>HLAbestEffort</transportation>
 					<order>Receive</order>
-					<semantics>Sredni czas oczekiwania na stolik</semantics>
+					<semantics>N/A</semantics>
 				</attribute>
 				<attribute>
-					<name>obsluzeni</name>
+					<name>klienciPrzyKasie</name>
 					<dataType>HLAinteger32BE</dataType>
+					<updateType>NA</updateType>
+					<updateCondition>On Change</updateCondition>
+					<ownership>Divest</ownership>
+					<sharing>PublishSubscribe</sharing>
+					<transportation>HLAbestEffort</transportation>
+					<order>Receive</order>
+					<semantics>N/A</semantics>
+				</attribute>
+				<attribute>
+					<name>sredniCzasZakupow</name>
+					<dataType>HLAinteger32BE</dataType>
+					<updateType>NA</updateType>
+					<updateCondition>On Change</updateCondition>
+					<ownership>Divest</ownership>
+					<sharing>PublishSubscribe</sharing>
+					<transportation>HLAbestEffort</transportation>
+					<order>Receive</order>
+					<semantics>N/A</semantics>
+				</attribute>
+				<attribute>
+					<name>procentUprzywilejowanych</name>
+					<dataType>HLAboolean</dataType>
 					<updateType>NA</updateType>
 					<updateCondition>On Change</updateCondition>
 					<ownership>Divest</ownership>
@@ -152,17 +218,27 @@
 						<semantics>N/A</semantics>
 					</parameter>
 				</interactionClass>
-			</interactionClass>
-			<interactionClass>
-				<name>Statystyka</name>
-				<sharing>PublishSubscribe</sharing>
-				<transportation>HLAbestEffort</transportation>
-				<order>Receive</order>
 				<interactionClass>
-					<name>wyswietl</name>
+					<name>otworz</name>
 					<sharing>Publish</sharing>
 					<transportation>HLAbestEffort</transportation>
 					<order>Receive</order>
+					<parameter>
+						<name>nrKasy</name>
+						<dataType>HLAinteger32BE</dataType>
+						<semantics>N/A</semantics>
+					</parameter>
+				</interactionClass>
+				<interactionClass>
+					<name>zamknij</name>
+					<sharing>Publish</sharing>
+					<transportation>HLAbestEffort</transportation>
+					<order>Receive</order>
+					<parameter>
+						<name>nrKasy</name>
+						<dataType>HLAinteger32BE</dataType>
+						<semantics>N/A</semantics>
+					</parameter>
 				</interactionClass>
 			</interactionClass>
 		</interactionClass>

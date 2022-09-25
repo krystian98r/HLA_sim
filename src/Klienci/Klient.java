@@ -61,4 +61,16 @@ public class Klient {
     public boolean isUprzywilejowany() {
         return uprzywilejowany;
     }
+
+    public void setUprzywilejowany(boolean uprzywilejowany) {
+        this.uprzywilejowany = uprzywilejowany;
+    }
+
+    public void setNrKasy(int nrKasy) {
+        this.nrKasy = nrKasy;
+    }
+
+    public void setCzasZakupow(int czasZakupow) {
+        this.czasZakupow = czasZakupow;
+    }
 }

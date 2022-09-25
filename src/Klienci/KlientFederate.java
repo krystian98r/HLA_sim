@@ -11,6 +11,7 @@ import hla.rti1516e.exceptions.RTIexception;
 import hla.rti1516e.time.HLAfloat64Interval;
 import hla.rti1516e.time.HLAfloat64Time;
 import hla.rti1516e.time.HLAfloat64TimeFactory;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -38,10 +39,17 @@ public class KlientFederate {
     protected ObjectClassHandle kasaHandle;
     protected AttributeHandle dostepnoscKasyHandle;
     protected AttributeHandle nrKasyHandle;
+    protected ObjectClassHandle klientHandle;
+    protected AttributeHandle czasWejsciaKlientHandle;
+    protected AttributeHandle czasZakupowKlientHandle;
+    protected AttributeHandle nrKlientaKlientHandle;
+    protected AttributeHandle uprzywilejowanyKlientHandle;
+    protected AttributeHandle nrKasyKlientHandle;
     protected InteractionClassHandle czekajHandle;
     protected InteractionClassHandle obsluzHandle;
     protected ParameterHandle nrKlientaObsluzHandle;
     protected ParameterHandle nrKasyObsluzHandle;
+    protected InteractionClassHandle wejdzHandle;
     protected boolean kasaAvailable = true;
     protected int nrKasy = 1;
     private Random rand = new Random();
@@ -165,6 +173,11 @@ public class KlientFederate {
         // produce, and all the data we want to know about
         publishAndSubscribe();
         log("Published and Subscribed");
+
+        ObjectInstanceHandle objectHandle = rtiamb.registerObjectInstance(klientHandle);
+        log("Registered Storage, handle=" + objectHandle);
+
+        /////////////////////////////////////
 //		// 10. do the main simulation loop //
         /////////////////////////////////////
         // here is where we do the meat of our work. in each iteration, we will
@@ -173,13 +186,24 @@ public class KlientFederate {
         int i_nrKlienta = 1;
         nextKlient = 0;
         int producedValue;
-
         while (fedamb.isRunning) {
             if (fedamb.federateTime >= nextKlient) {
+                AttributeHandleValueMap attributes = rtiamb.getAttributeHandleValueMapFactory().create(5);
                 Klient klient = new Klient(i_nrKlienta, fedamb.federateTime);
                 i_nrKlienta++;
                 klienciSklep.add(klient);
                 nextKlient = nextKlient + rand.nextInt(3) + 1;
+
+                HLAboolean uprzywilejowany = encoderFactory.createHLAboolean(klient.isUprzywilejowany());
+                System.out.println("Czy uprzywilejowany: " + klient.isUprzywilejowany());
+                HLAinteger32BE nrKlienta = encoderFactory.createHLAinteger32BE(klient.getNrKlienta());
+                HLAinteger32BE czasZakupow = encoderFactory.createHLAinteger32BE(klient.getCzasZakupow());
+                HLAinteger32BE czasWejscia = encoderFactory.createHLAinteger32BE((int) klient.getCzasWejscia());
+                attributes.put(nrKlientaKlientHandle, nrKlienta.toByteArray());
+                attributes.put(czasWejsciaKlientHandle, czasWejscia.toByteArray());
+                attributes.put(czasZakupowKlientHandle, czasZakupow.toByteArray());
+                attributes.put(uprzywilejowanyKlientHandle, uprzywilejowany.toByteArray());
+                rtiamb.updateAttributeValues(objectHandle, attributes, generateTag());
             }
 
             for (int i = 0; i < klienciSklep.size(); i++) {
@@ -271,12 +295,26 @@ public class KlientFederate {
         this.kasaHandle = rtiamb.getObjectClassHandle("HLAobjectRoot.Kasa");
         this.dostepnoscKasyHandle = rtiamb.getAttributeHandle(kasaHandle, "dostepnoscKasy");
         this.nrKasyHandle = rtiamb.getAttributeHandle(kasaHandle, "nrKasy");
-
         // package the information into a handle set
         AttributeHandleSet attributes = rtiamb.getAttributeHandleSetFactory().create();
         attributes.add(dostepnoscKasyHandle);
         attributes.add(nrKasyHandle);
         rtiamb.subscribeObjectClassAttributes(kasaHandle, attributes);
+
+        // publish Klient
+        this.klientHandle = rtiamb.getObjectClassHandle("HLAobjectRoot.Klient");
+        this.czasWejsciaKlientHandle = rtiamb.getAttributeHandle(klientHandle, "czasWejscia");
+        this.nrKlientaKlientHandle = rtiamb.getAttributeHandle(klientHandle, "nrKlienta");
+        this.czasZakupowKlientHandle = rtiamb.getAttributeHandle(klientHandle, "czasZakupow");
+        this.uprzywilejowanyKlientHandle = rtiamb.getAttributeHandle(klientHandle, "uprzywilejowany");
+        this.nrKasyKlientHandle = rtiamb.getAttributeHandle(klientHandle, "nrKasy");
+        attributes = rtiamb.getAttributeHandleSetFactory().create();
+        attributes.add(czasWejsciaKlientHandle);
+        attributes.add(nrKlientaKlientHandle);
+        attributes.add(uprzywilejowanyKlientHandle);
+        attributes.add(czasZakupowKlientHandle);
+        attributes.add(nrKasyKlientHandle);
+        rtiamb.publishObjectClassAttributes(klientHandle, attributes);
 
         // publish Czekaj Interaction
         String iname = "HLAinteractionRoot.Klient.czekaj";
