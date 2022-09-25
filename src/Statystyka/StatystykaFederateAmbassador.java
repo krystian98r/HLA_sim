@@ -188,7 +188,7 @@ public class StatystykaFederateAmbassador extends NullFederateAmbassador {
                     e.printStackTrace();
                 }
                 builder.append(nrKlienta.getValue());
-                federate.klienci.add(new Klient(nrKlienta.getValue(), federateTime));
+                federate.klienci.add(new Klient(nrKlienta.getValue(), federateTime, false));
 //                federate.statystyka.dodajNaSklepie();
             } else if (attributeHandle.equals(federate.czasWejsciaKlientHandle)) {
                 builder.append(attributeHandle);

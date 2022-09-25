@@ -189,7 +189,7 @@ public class KlientFederate {
         while (fedamb.isRunning) {
             if (fedamb.federateTime >= nextKlient) {
                 AttributeHandleValueMap attributes = rtiamb.getAttributeHandleValueMapFactory().create(5);
-                Klient klient = new Klient(i_nrKlienta, fedamb.federateTime);
+                Klient klient = new Klient(i_nrKlienta, fedamb.federateTime, true);
                 i_nrKlienta++;
                 klienciSklep.add(klient);
                 nextKlient = nextKlient + rand.nextInt(3) + 1;

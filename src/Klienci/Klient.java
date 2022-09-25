@@ -15,16 +15,18 @@ public class Klient {
     private Random random = new Random();
 
 
-    public Klient(int nrKlienta, double czasWejscia) {
+    public Klient(int nrKlienta, double czasWejscia, boolean wypisz) {
         this.czasWejscia = czasWejscia;
         this.czasZakupow = random.nextInt(maxCzasZakupow - minCzasZakupow) + minCzasZakupow;
         this.uprzywilejowany = random.nextInt(10) == 0; // bound/100 chance to get
         this.nrKlienta = nrKlienta;
 
-        System.out.println("\u001B[34mNOWY KLIENT\nNr klienta: " + nrKlienta + "\nCzas robienia zakupów: " + czasZakupow);
-        if (uprzywilejowany) System.out.println("Uprzywilejowany: TAK\n");
-        else System.out.println("Uprzywilejowany: NIE");
-        System.out.println("\u001B[0m");
+        if(wypisz) {
+            System.out.println("\u001B[34mNOWY KLIENT\nNr klienta: " + nrKlienta + "\nCzas robienia zakupów: " + czasZakupow);
+            if (uprzywilejowany) System.out.println("Uprzywilejowany: TAK\n");
+            else System.out.println("Uprzywilejowany: NIE");
+            System.out.println("\u001B[0m");
+        }
     }
 
     public Klient(int nrKlienta) {

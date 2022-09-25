@@ -210,12 +210,12 @@ public class StatystykaFederate {
         // send an interaction.
 
         while (fedamb.isRunning) {
-            System.out.println("\u001B[31mZOtwarte kasy: " + statystyka.getOtwarteKasy());
+            System.out.println("\u001B[31mOtwarte kasy: " + statystyka.getOtwarteKasy());
             System.out.println("Klienci robiący zakupy: " + statystyka.getKlienciNaSklepie());
             System.out.println("Klienci przy kasach: " + statystyka.getKlienciPrzyKasach());
             System.out.println("Klienci obsłużeni: " + statystyka.getObsluzeniKlienci());
             System.out.println("Średni czas zakupów: " + statystyka.getSredniCzasZakupow());
-            System.out.println("Uprzywilejowanych klientów: " + statystyka.getSumaUprzywilejowanych() + " (" + statystyka.getProcentUprzywilejowanych() + "%)\u001B[0mZ");
+            System.out.println("Uprzywilejowanych klientów: " + statystyka.getSumaUprzywilejowanych() + " (" + statystyka.getProcentUprzywilejowanych() + "%)\u001B[0m");
 
             advanceTime(1);
             log("Time Advanced to " + fedamb.federateTime);
