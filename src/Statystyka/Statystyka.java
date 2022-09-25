@@ -5,20 +5,19 @@ public class Statystyka {
     private int klienciNaSklepie;
     private int klienciPrzyKasach;
     private int obsluzeniKlienci;
-    private double sredniCzasZakupow;
     private int sumaCzasZakupow;
     private int sumaUprzywilejowanych;
-    private double procentUprzywilejowanych;
     private int otwarteKasy;
+    private int sumaCzasObslugi;
 
     public Statystyka() {
         klienciNaSklepie = 0;
         klienciPrzyKasach = 0;
         obsluzeniKlienci = 0;
-        sredniCzasZakupow = 0;
         sumaCzasZakupow = 0;
         sumaUprzywilejowanych = 0;
         otwarteKasy = 0;
+        sumaCzasObslugi = 0;
     }
 
     public void dodajPrzyKasach() {
@@ -53,18 +52,18 @@ public class Statystyka {
         return obsluzeniKlienci;
     }
 
-    public double getSredniCzasZakupow() {
+    public double sredniCzasZakupow() {
+        double sredniCzasZakupow = (double) sumaCzasZakupow / (klienciNaSklepie + klienciPrzyKasach + obsluzeniKlienci);
         return (double) Math.round(sredniCzasZakupow * 100) / 100;
     }
 
-    public double getProcentUprzywilejowanych() {
-        zaktualizujProcentUprzywilejowanych();
+    public double procentUprzywilejowanych() {
+        double procentUprzywilejowanych = sumaUprzywilejowanych * 100 / (double) (klienciNaSklepie + klienciPrzyKasach + obsluzeniKlienci);
         return (double) Math.round(procentUprzywilejowanych * 100) / 100;
     }
 
     public void dodajSumaCzasZakupow(int czasZakupow) {
         sumaCzasZakupow += czasZakupow;
-        sredniCzasZakupow = (double) sumaCzasZakupow / (klienciNaSklepie + klienciPrzyKasach + obsluzeniKlienci);
     }
 
     public void dodajUprzywilejowany() {
@@ -87,7 +86,11 @@ public class Statystyka {
         return otwarteKasy;
     }
 
-    private void zaktualizujProcentUprzywilejowanych() {
-        procentUprzywilejowanych = sumaUprzywilejowanych * 100 / (double) (klienciNaSklepie + klienciPrzyKasach + obsluzeniKlienci);
+    public void dodajSumaCzasOblugi(int czasObslugi) {
+        sumaCzasObslugi += czasObslugi;
+    }
+
+    public double sredniCzasObslugi() {
+        return (double) Math.round(sumaCzasObslugi / (double) obsluzeniKlienci * 100) / 100;
     }
 }

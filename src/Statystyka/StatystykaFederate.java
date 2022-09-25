@@ -3,9 +3,6 @@ package Statystyka;
 import Klienci.Klient;
 import hla.rti1516e.*;
 import hla.rti1516e.encoding.EncoderFactory;
-import hla.rti1516e.encoding.HLAboolean;
-import hla.rti1516e.encoding.HLAinteger16BE;
-import hla.rti1516e.encoding.HLAinteger32BE;
 import hla.rti1516e.exceptions.FederatesCurrentlyJoined;
 import hla.rti1516e.exceptions.FederationExecutionAlreadyExists;
 import hla.rti1516e.exceptions.FederationExecutionDoesNotExist;
@@ -13,18 +10,12 @@ import hla.rti1516e.exceptions.RTIexception;
 import hla.rti1516e.time.HLAfloat64Interval;
 import hla.rti1516e.time.HLAfloat64Time;
 import hla.rti1516e.time.HLAfloat64TimeFactory;
-import org.portico.impl.hla1516e.types.encoding.HLA1516eInteger32BE;
-import org.w3c.dom.Attr;
-
-import javax.management.Attribute;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
-import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Random;
 
 public class StatystykaFederate {
     //----------------------------------------------------------
@@ -214,8 +205,9 @@ public class StatystykaFederate {
             System.out.println("Klienci robiący zakupy: " + statystyka.getKlienciNaSklepie());
             System.out.println("Klienci przy kasach: " + statystyka.getKlienciPrzyKasach());
             System.out.println("Klienci obsłużeni: " + statystyka.getObsluzeniKlienci());
-            System.out.println("Średni czas zakupów: " + statystyka.getSredniCzasZakupow());
-            System.out.println("Uprzywilejowanych klientów: " + statystyka.getSumaUprzywilejowanych() + " (" + statystyka.getProcentUprzywilejowanych() + "%)\u001B[0m");
+            System.out.println("Średni czas zakupów: " + statystyka.sredniCzasZakupow());
+            System.out.println("Średni czas oczekiwania na obsługę: " + statystyka.sredniCzasObslugi());
+            System.out.println("Uprzywilejowanych klientów: " + statystyka.getSumaUprzywilejowanych() + " (" + statystyka.procentUprzywilejowanych() + "%)\u001B[0m");
 
             advanceTime(1);
             log("Time Advanced to " + fedamb.federateTime);

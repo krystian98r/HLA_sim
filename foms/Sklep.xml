@@ -142,7 +142,7 @@
 				</attribute>
 				<attribute>
 					<name>sredniCzasZakupow</name>
-					<dataType>HLAinteger32BE</dataType>
+					<dataType>HLAfloat32BE</dataType>
 					<updateType>NA</updateType>
 					<updateCondition>On Change</updateCondition>
 					<ownership>Divest</ownership>

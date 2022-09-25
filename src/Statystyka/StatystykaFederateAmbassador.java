@@ -14,10 +14,7 @@ import hla.rti1516e.ParameterHandle;
 import hla.rti1516e.ParameterHandleValueMap;
 import hla.rti1516e.SynchronizationPointFailureReason;
 import hla.rti1516e.TransportationTypeHandle;
-import hla.rti1516e.encoding.DecoderException;
-import hla.rti1516e.encoding.HLAboolean;
-import hla.rti1516e.encoding.HLAinteger16BE;
-import hla.rti1516e.encoding.HLAinteger32BE;
+import hla.rti1516e.encoding.*;
 import hla.rti1516e.exceptions.FederateInternalError;
 import hla.rti1516e.time.HLAfloat64Time;
 import org.portico.impl.hla1516e.types.encoding.HLA1516eBoolean;
@@ -281,6 +278,19 @@ public class StatystykaFederateAmbassador extends NullFederateAmbassador {
             builder.append(" (obsluz)");
             federate.statystyka.odejmijPrzyKasach();
             federate.statystyka.dodajObsluzeni();
+            byte[] bytes = theParameters.get(federate.nrKlientaObsluzHandle);
+            HLAinteger32BE nrKlienta = new HLA1516eInteger32BE();
+            try {
+                nrKlienta.decode(bytes);
+            } catch (DecoderException e) {
+                e.printStackTrace();
+            }
+            for (Klient k : federate.klienci) {
+                if (k.getNrKlienta() == nrKlienta.getValue()) {
+                    int czasObslugi = (int) federateTime - (int) k.getCzasWejscia() - k.getCzasZakupow();
+                    federate.statystyka.dodajSumaCzasOblugi(czasObslugi);
+                }
+            }
         } else if (interactionClass.equals(federate.otworzHandle)) {
             builder.append(" (otworz)");
             federate.statystyka.dodajKase();
@@ -300,40 +310,6 @@ public class StatystykaFederateAmbassador extends NullFederateAmbassador {
         // print the parameer information
         builder.append(", parameterCount=" + theParameters.size());
         builder.append("\n");
-//        for( ParameterHandle parameter : theParameters.keySet() )
-//        {
-//
-//            if(parameter.equals(federate.idKlientaHandle))
-//            {
-//                builder.append( "\tCOUNT PARAM!" );
-//                //byte[] bytes = theParameters.get(federate.stolikHandle);
-//
-//
-//                //int nrValue = nr_stolika.getValue();
-//                int idValue = id_klienta.getValue();
-//                if( interactionClass.equals(federate.zajmijStolikHandle) )
-//                {
-//                    Stolik.getInstance().zajmij_stolik(1, idValue);
-//                }
-//                else if( interactionClass.equals(federate.zwolnijStolikHandle) )
-//                {
-//                    Stolik.getInstance().zwolnij_stolik(1, idValue);
-//                }
-//
-//
-//            }
-//            else
-//            {
-//                // print the parameter handle
-//                builder.append( "\tparamHandle=" );
-//                builder.append( parameter );
-//                // print the parameter value
-//                builder.append( ", paramValue=" );
-//                builder.append( theParameters.get(parameter).length );
-//                builder.append( " bytes" );
-//                builder.append( "\n" );
-//            }
-//        }
 
         log(builder.toString());
     }

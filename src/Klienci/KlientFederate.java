@@ -195,7 +195,6 @@ public class KlientFederate {
                 nextKlient = nextKlient + rand.nextInt(3) + 1;
 
                 HLAboolean uprzywilejowany = encoderFactory.createHLAboolean(klient.isUprzywilejowany());
-                System.out.println("Czy uprzywilejowany: " + klient.isUprzywilejowany());
                 HLAinteger32BE nrKlienta = encoderFactory.createHLAinteger32BE(klient.getNrKlienta());
                 HLAinteger32BE czasZakupow = encoderFactory.createHLAinteger32BE(klient.getCzasZakupow());
                 HLAinteger32BE czasWejscia = encoderFactory.createHLAinteger32BE((int) klient.getCzasWejscia());
@@ -226,8 +225,6 @@ public class KlientFederate {
                     klienciSklep.remove(i);
                 }
             }
-            System.out.println("Klienci robiący zakupy: " + klienciSklep.size());
-            System.out.println("Klienci przy kasach: " + klienciKasy.size());
 
             // 9.3 request a time advance and wait until we get it
             advanceTime(1);
